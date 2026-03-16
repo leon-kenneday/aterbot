@@ -1,17 +1,19 @@
 {
+	"name": "aterbot",
+	"version": "1.0.0",
 	"private": true,
 	"type": "module",
-	
-	"name": "aterbot",
-	"version": "0.0.0",
-	
 	"scripts": {
-		 "start": "npx ts-node --esm src/index.ts",
+		"start": "npx ts-node --esm src/index.ts",
 		"dev": "node --inspect --loader tsx ./src/index.ts"
 	},
-
 	"dependencies": {
 		"mineflayer": "^4.20.0",
+		"mineflayer-pathfinder": "latest",
+		"mineflayer-pvp": "latest",
+		"mineflayer-armor-manager": "latest",
+		"typescript": "^5.0.0",
+		"ts-node": "^10.9.2",
 		"tsx": "^4.7.1"
 	}
 }
