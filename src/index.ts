@@ -1,10 +1,11 @@
 import mineflayer from "mineflayer";
-// Fixed the import that caused the SyntaxError
 import * as pathfinder from "mineflayer-pathfinder";
 import CONFIG from "../config.json" with { type: "json" }; 
 
-const pvp = require('mineflayer-pvp').plugin;
-const armorManager = require('mineflayer-armor-manager');
+// Fixed imports for ES Modules
+import pvp from 'mineflayer-pvp';
+import armorManager from 'mineflayer-armor-manager';
+import http from 'http';
 
 const bot = mineflayer.createBot({
     host: CONFIG.client.host,
@@ -16,7 +17,7 @@ const bot = mineflayer.createBot({
 
 // Load Plugins
 bot.loadPlugin(pathfinder.pathfinder);
-bot.loadPlugin(pvp);
+bot.loadPlugin(pvp.plugin);
 bot.loadPlugin(armorManager);
 
 bot.on("spawn", () => {
@@ -37,18 +38,13 @@ bot.on('entityHurt', (entity) => {
 
         if (attacker) {
             bot.chat(`Target identified: ${attacker.username || attacker.name}. Commencing elimination.`);
-            bot.pvp.attack(attacker); 
+            (bot as any).pvp.attack(attacker); 
         }
     }
 });
 
-bot.on('stoppedAttacking', () => {
-    bot.chat("Target neutralized.");
-});
-
-// Web server for Render
-const http = require('http');
-http.createServer((req: any, res: any) => {
+// Web server to prevent Render "Port Scan Timeout" and sleep
+http.createServer((req, res) => {
     res.write("Bot is Live!");
     res.end();
 }).listen(10000);
@@ -56,7 +52,6 @@ http.createServer((req: any, res: any) => {
 // Anti-AFK & Movement
 setInterval(() => {
     const { x, y, z } = bot.entity.position;
-    // Fixed the goals reference here too
     bot.pathfinder.setGoal(new pathfinder.goals.GoalNear(x + (Math.random() - 0.5) * 2, y, z + (Math.random() - 0.5) * 2, 0));
 }, 30000);
 
