@@ -9,9 +9,9 @@ import http from 'http';
 
 const bot = mineflayer.createBot({
     host: CONFIG.client.host,
-    port: CONFIG.client.port,
+    port: Number(CONFIG.client.port), // This converts "50060" to 50060
     username: CONFIG.client.username,
-    version: CONFIG.client.version || false,
+    version: "1.21.1", // Force the version to match your Aternos log
     auth: "offline"
 });
 
