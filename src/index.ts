@@ -63,3 +63,7 @@ bot.on('death', () => {
     // unless it gets kicked for dying too many times.
 });
 
+bot.on('end', () => {
+    console.log("Bot disconnected. Restarting in 10 seconds...");
+    setTimeout(() => process.exit(1), 10000); // This forces Render to restart the bot
+});
