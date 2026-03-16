@@ -1,15 +1,12 @@
 {
 	"client": {
-		"host": "Please enter your server URL",
-		"port": "Please enter your server port",
-		"username": "Please enter the bot's username you want"
+		"host": "longfin.aternos.host",
+		"port": 50060,
+		"username": "AFK_Bot_247"
 	},
-	
-	"! DO NOT EDIT BELOW !": "ONLY IF YOU KNOW WHAT YOU ARE DOING",
-	"logLevel": ["error", "log", "debug"],
 	"action": {
 		"commands": ["forward", "back", "left", "right", "jump"],
 		"holdDuration": 5000,
 		"retryDelay": 15000
-	}
+    }
 }
