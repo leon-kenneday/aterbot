@@ -1,10 +1,10 @@
 import mineflayer from "mineflayer";
-import { pathfinder, Movements, goals } from "mineflayer-pathfinder";
-// Use 'with' for Node 22 compatibility (fixes your 'assert' error)
+// Fixed the import that caused the SyntaxError
+import * as pathfinder from "mineflayer-pathfinder";
 import CONFIG from "../config.json" with { type: "json" }; 
 
-// Import PVP plugin
 const pvp = require('mineflayer-pvp').plugin;
+const armorManager = require('mineflayer-armor-manager');
 
 const bot = mineflayer.createBot({
     host: CONFIG.client.host,
@@ -15,21 +15,20 @@ const bot = mineflayer.createBot({
 });
 
 // Load Plugins
-bot.loadPlugin(pathfinder);
+bot.loadPlugin(pathfinder.pathfinder);
 bot.loadPlugin(pvp);
+bot.loadPlugin(armorManager);
 
 bot.on("spawn", () => {
     console.log(`Bot spawned as ${bot.username}`);
-    bot.chat("24/7 Defense System Active.");
+    bot.chat("System Online. Brutal Defense & Auto-Armor Active.");
     
-    // Set default movements
-    const defaultMove = new Movements(bot, (bot as any).registry);
+    const defaultMove = new pathfinder.Movements(bot, (bot as any).registry);
     bot.pathfinder.setMovements(defaultMove);
 });
 
-// --- BRUTAL PVP DEFENSE LOGIC ---
+// --- BRUTAL PVP DEFENSE ---
 bot.on('entityHurt', (entity) => {
-    // If the bot itself is hit
     if (entity === bot.entity) {
         const attacker = bot.nearestEntity((e) => 
             (e.type === 'player' || e.type === 'mob') && 
@@ -37,32 +36,28 @@ bot.on('entityHurt', (entity) => {
         );
 
         if (attacker) {
-            bot.chat(`Target locked: ${attacker.username || attacker.name}. You will regret that.`);
-            
-            // Start the brutal attack
+            bot.chat(`Target identified: ${attacker.username || attacker.name}. Commencing elimination.`);
             bot.pvp.attack(attacker); 
         }
     }
 });
 
-// Taunt when target is eliminated
 bot.on('stoppedAttacking', () => {
-    if (bot.pvp.target) {
-        bot.chat("Threat neutralized. Back to guard duty.");
-    }
+    bot.chat("Target neutralized.");
 });
 
-// Simple web server to keep Render happy
+// Web server for Render
 const http = require('http');
 http.createServer((req: any, res: any) => {
-    res.write("Bot is running!");
+    res.write("Bot is Live!");
     res.end();
 }).listen(10000);
 
-// Anti-AFK: Move slightly every 30 seconds
+// Anti-AFK & Movement
 setInterval(() => {
     const { x, y, z } = bot.entity.position;
-    bot.pathfinder.setGoal(new goals.GoalNear(x + (Math.random() - 0.5) * 2, y, z + (Math.random() - 0.5) * 2, 0));
+    // Fixed the goals reference here too
+    bot.pathfinder.setGoal(new pathfinder.goals.GoalNear(x + (Math.random() - 0.5) * 2, y, z + (Math.random() - 0.5) * 2, 0));
 }, 30000);
 
 bot.on("error", (err) => console.log("Error:", err));
