@@ -1,74 +1,65 @@
-import Mineflayer from 'mineflayer';
-import { sleep, getRandom } from "./utils.ts";
-import CONFIG from "../config.json" assert {type: 'json'};
+import mineflayer from 'mineflayer';
+// Fix the import for Node 22
+import CONFIG from "../config.json" with { type: "json" }; 
+import * as pathfinder from "mineflayer-pathfinder";
 
-let loop: NodeJS.Timeout;
-let bot: Mineflayer.Bot;
+// Use require for these specific plugins to avoid ES Module errors
+const pvp = require('mineflayer-pvp').plugin;
+const armorManager = require('mineflayer-armor-manager');
 
-const disconnect = (): void => {
-	clearInterval(loop);
-	bot?.quit?.();
-	bot?.end?.();
-};
-const reconnect = async (): Promise<void> => {
-	console.log(`Trying to reconnect in ${CONFIG.action.retryDelay / 1000} seconds...\n`);
-
-	disconnect();
-	await sleep(CONFIG.action.retryDelay);
-	createBot();
-	return;
-};
+let bot: mineflayer.Bot;
 
 const createBot = (): void => {
-	bot = Mineflayer.createBot({
-		host: CONFIG.client.host,
-		port: +CONFIG.client.port,
-		username: CONFIG.client.username
-	} as const);
+    bot = mineflayer.createBot({
+        host: CONFIG.client.host,
+        port: Number(CONFIG.client.port),
+        username: CONFIG.client.username,
+        version: "1.21.1", // Forced version from your Aternos logs
+        auth: "offline"
+    });
 
+    // Load Brutal Plugins
+    bot.loadPlugin(pathfinder.pathfinder);
+    bot.loadPlugin(pvp);
+    bot.loadPlugin(armorManager);
 
-	bot.once('error', error => {
-		console.error(`AFKBot got an error: ${error}`);
-	});
-	bot.once('kicked', rawResponse => {
-		console.error(`\n\nAFKbot is disconnected: ${rawResponse}`);
-	});
-	bot.once('end', () => void reconnect());
+    bot.on('spawn', () => {
+        console.log(`[SYSTEM] Bot spawned as ${bot.username}`);
+        bot.chat("Defense System Online. Do not touch me.");
+        
+        // Setup movements for PvP chasing
+        const defaultMove = new pathfinder.Movements(bot, (bot as any).registry);
+        bot.pathfinder.setMovements(defaultMove);
+    });
 
-	bot.once('spawn', () => {
-		const changePos = async (): Promise<void> => {
-			const lastAction = getRandom(CONFIG.action.commands) as Mineflayer.ControlState;
-			const halfChance: boolean = Math.random() < 0.5? true : false; // 50% chance to sprint
+    // --- BRUTAL DEFENSE LOGIC ---
+    bot.on('entityHurt', (entity) => {
+        if (entity === bot.entity) {
+            const attacker = bot.nearestEntity((e) => 
+                (e.type === 'player' || e.type === 'mob') && 
+                e.position.distanceTo(bot.entity.position) < 16
+            );
+            if (attacker) {
+                bot.chat(`Target Locked: ${attacker.username || attacker.name}. Initiating elimination.`);
+                (bot as any).pvp.attack(attacker); 
+            }
+        }
+    });
 
-			console.debug(`${lastAction}${halfChance? " with sprinting" : ''}`);
+    // --- RECONNECT LOGIC ---
+    bot.on('error', (err) => {
+        console.error("Bot Error:", err);
+        setTimeout(() => process.exit(1), 5000); // Forces Render to restart
+    });
 
-			bot.setControlState('sprint', halfChance);
-			bot.setControlState(lastAction, true); // starts the selected random action
+    bot.on('end', () => {
+        console.log("Disconnected. Restarting...");
+        setTimeout(() => process.exit(1), 5000);
+    });
 
-			await sleep(CONFIG.action.holdDuration);
-			bot.clearControlStates();
-			return;
-		};
-		const changeView = async (): Promise<void> => {
-			const yaw = (Math.random() * Math.PI) - (0.5 * Math.PI),
-				pitch = (Math.random() * Math.PI) - (0.5 * Math.PI);
-			
-			await bot.look(yaw, pitch, false);
-			return;
-		};
-		
-		loop = setInterval(() => {
-			changeView();
-			changePos();
-		}, CONFIG.action.holdDuration);
-	});
-	bot.once('login', () => {
-		console.log(`AFKBot logged in ${bot.username}\n\n`);
-	});
+    bot.on('login', () => console.log("Bot logged in successfully!"));
 };
 
-
-
 export default (): void => {
-	createBot();
+    createBot();
 };
