@@ -57,3 +57,9 @@ setInterval(() => {
 
 bot.on("error", (err) => console.log("Error:", err));
 bot.on("kicked", (reason) => console.log("Kicked:", reason));
+bot.on('death', () => {
+    bot.chat("You can't kill a machine. Respawning...");
+    // No extra code needed, mineflayer usually respawns automatically 
+    // unless it gets kicked for dying too many times.
+});
+
